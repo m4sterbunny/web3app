@@ -4,18 +4,15 @@ import { useAccount, useBalance, useEnsAvatar, useEnsName } from 'wagmi';
 import { useEffect, useState } from 'react';
 import { mainnet } from 'viem/chains';
 import Image from 'next/image';
-import SendEthModal from './sendEthModal';
-import SendErc20Modal from './sendErc20Modal';
-import SwapErc20Modal from './swapErc20Modal';
 
 export function Account() {
   const [isMounted, setIsMounted] = useState(false);
-  const { address: userAddress, chain, chainId, isConnected } = useAccount();
+  const { address, chain, chainId, isConnected } = useAccount();
   const accountBalance = useBalance({
-    address: userAddress,
+    address,
   });
   const { data: ensName } = useEnsName({
-    address: userAddress,
+    address,
     chainId: mainnet.id,
   });
   const { data: ensAvatar } = useEnsAvatar({
@@ -29,14 +26,6 @@ export function Account() {
     }
   }, [isMounted]);
 
-  if (!isMounted) {
-    return (
-      <div>
-        <p className="text-lg">Loading...</p>
-      </div>
-    );
-  }
-
   if (!isConnected) {
     return (
       <div>
@@ -47,7 +36,7 @@ export function Account() {
 
   return (
     <div className="flex flex-col items-center text-center gap-y-4">
-      {ensAvatar && ensName && (
+      {ensAvatar && ensName && isMounted && (
         <div className="flex items-center gap-x-2">
           <Image
             alt="ENS Avatar"
@@ -59,9 +48,9 @@ export function Account() {
           {ensName && <p className="text-2xl">{ensName}</p>}
         </div>
       )}
-      {userAddress && (
+      {address && isMounted && (
         <>
-          <p className="text-lg">{userAddress}</p>
+          <p className="text-lg">{address}</p>
         </>
       )}
       <div className="flex flex-col gap-y-2">
@@ -70,22 +59,11 @@ export function Account() {
             Balance: {accountBalance.data?.formatted} ETH
           </p>
         )}
-        {chain && chainId && (
+        {chain && chainId && isMounted && (
           <p className="text-lg">
             {chain.name}, chainId: {chainId}
           </p>
         )}
-      </div>
-      <div className="flex justify-center gap-x-8">
-        <div className="w-2/5">
-          <SendEthModal />
-        </div>
-        <div className="w-2/5">
-          <SendErc20Modal userAddress={userAddress} />
-        </div>
-        <div className="w-2/5">
-          <SwapErc20Modal userAddress={userAddress} />
-        </div>
       </div>
     </div>
   );
