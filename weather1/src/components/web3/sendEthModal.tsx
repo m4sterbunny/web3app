@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther } from 'viem';
@@ -25,6 +27,10 @@ export default function SendEthModal() {
       hash,
     });
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   async function submitSendTx(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     sendTransaction({
@@ -32,12 +38,6 @@ export default function SendEthModal() {
       value: parseEther(ethValue),
     });
   }
-
-  useEffect(() => {
-    if (!isMounted) {
-      setIsMounted(true);
-    }
-  }, [isMounted]);
 
   return (
     <Dialog>
@@ -48,8 +48,7 @@ export default function SendEthModal() {
         <DialogHeader>
           <DialogTitle className="text-center">Send ETH</DialogTitle>
           <DialogDescription>
-            The amount entered will be sent to the address once you hit the Send
-            button
+            The amount entered will be sent to the address once you hit the Send button
           </DialogDescription>
         </DialogHeader>
         {isMounted ? (
