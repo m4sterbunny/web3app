@@ -2,44 +2,68 @@
 
 import { useAccount, useBalance, useEnsAvatar, useEnsName } from 'wagmi';
 import { useEffect, useState } from 'react'; // Import hooks from React
-import { mainnet } from 'viem/chains'; // Import mainnet chain from viem
 import Image from 'next/image'; // Import Next.js Image component for optimized images
 import { formatEther } from 'viem/utils'; // Import formatEther from viem
 
 export function Account() {
   const [isMounted, setIsMounted] = useState(false); // State to manage if the component is mounted
+  const [delayedAddress, setDelayedAddress] = useState(''); // State to store address with delay
+  const [delayedChainId, setDelayedChainId] = useState(null); // State to store chain ID with delay
 
   // Get user's account information
   const { address, chain, chainId, isConnected } = useAccount();
-
-  // Get user's balance
-  const { data: balanceData, isLoading: isBalanceLoading } = useBalance({
-    address,
-  });
-
-  // Get ENS name associated with the user's address
-  const { data: ensName } = useEnsName({
-    address,
-    chainId: mainnet.id,
-  });
-
-  // Get ENS avatar associated with the user's ENS name
-  const { data: ensAvatar } = useEnsAvatar({
-    name: ensName!,
-    chainId: mainnet.id,
-  });
 
   // Effect to set the component as mounted after it renders for the first time
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Debugging logs
+  // Add delay before setting the address and chain ID
+  useEffect(() => {
+    if (address && chainId) {
+      console.log('Starting timer delay for address and chainId');
+      const timer = setTimeout(() => {
+        setDelayedAddress(address);
+        setDelayedChainId(chainId);
+        console.log('Timer delay complete: Address and Chain ID set', { address, chainId });
+      }, 500); // 500ms delay
+
+      return () => {
+        clearTimeout(timer); // Cleanup timer on unmount
+        console.log('Timer cleared');
+      };
+    }
+  }, [address, chainId]);
+
+  // Get user's balance using delayed address and chain ID
+  const { data: balanceData, isLoading: isBalanceLoading, error: balanceError } = useBalance({
+    address: delayedAddress,
+    chainId: delayedChainId,
+  });
+
+  // Get ENS name associated with the user's address
+  const { data: ensName, isLoading: isEnsNameLoading, error: ensNameError } = useEnsName({
+    address: delayedAddress,
+    chainId: delayedChainId,
+  });
+
+  // Get ENS avatar associated with the user's ENS name
+  const { data: ensAvatar, isLoading: isEnsAvatarLoading, error: ensAvatarError } = useEnsAvatar({
+    name: ensName!,
+    chainId: delayedChainId,
+  });
+
+  // Enhanced debugging logs
   useEffect(() => {
     console.log('Address:', address);
+    console.log('Delayed Address:', delayedAddress);
+    console.log('Chain:', chain);
+    console.log('Chain ID:', chainId);
+    console.log('Delayed Chain ID:', delayedChainId);
     console.log('Balance Data:', balanceData);
     console.log('Is Balance Loading:', isBalanceLoading);
-  }, [address, balanceData, isBalanceLoading]);
+    console.log('Balance Error:', balanceError);
+  }, [address, delayedAddress, chain, chainId, delayedChainId, balanceData, isBalanceLoading, balanceError]);
 
   // If the user is not connected, display a message
   if (!isConnected) {
@@ -83,7 +107,7 @@ export function Account() {
               <p>Loading balance...</p>
             ) : (
               <p className="text-xl">
-                Balance: {parseFloat(formatEther(balanceData?.value ?? 0n)).toFixed(5)} ETH {/* Format balance to 5 decimal places */}
+                Balance: {balanceData ? parseFloat(formatEther(balanceData.value)).toFixed(5) : 'N/A'} ETH {/* Format balance to 5 decimal places */}
               </p>
             )}
             {/* Display the connected chain and chain ID */}
