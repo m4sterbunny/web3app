@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useBalance, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther } from 'viem';
 import {
   Dialog,
@@ -22,10 +22,13 @@ export default function SendEthModal() {
   const [ethValue, setEthValue] = useState('');
   const [isMounted, setIsMounted] = useState(false);
   const { data: hash, isPending, sendTransaction } = useSendTransaction();
+  const [insufficientFunds, setInsufficientFunds] = useState(false); // State to handle insufficient funds
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({
       hash,
     });
+  const { address } = useAccount(); // Get user's account information
+  const { data: balanceData } = useBalance({ address }); // Get user's balance
 
   useEffect(() => {
     setIsMounted(true);
@@ -33,6 +36,16 @@ export default function SendEthModal() {
 
   async function submitSendTx(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setInsufficientFunds(false); // Reset insufficient funds state
+
+    const balance = parseFloat(balanceData?.formatted || '0');
+    const valueToSend = parseFloat(ethValue);
+
+    if (valueToSend >= balance) {
+      setInsufficientFunds(true); // Set insufficient funds state
+      return;
+    }
+
     sendTransaction({
       to: toAddress as `0x${string}`,
       value: parseEther(ethValue),
@@ -70,7 +83,7 @@ export default function SendEthModal() {
                 <Label htmlFor="value">Amount</Label>
                 <Input
                   name="value"
-                  placeholder="0.05"
+                  placeholder="0.0005"
                   required
                   onChange={(event) => setEthValue(event.target.value)}
                 />
@@ -78,6 +91,9 @@ export default function SendEthModal() {
               <Button type="submit" disabled={isPending}>
                 {isPending ? 'Confirming...' : 'Send'}
               </Button>
+              {insufficientFunds && (
+                <p className="text-red-500">Insufficient funds</p> // Show insufficient funds message
+              )}
             </form>
             {hash && (
               <div className="pt-8 flex flex-col items-center">
