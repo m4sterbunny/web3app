@@ -6,6 +6,10 @@ import { http, createConfig, WagmiProvider } from 'wagmi';
 import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
 import { polygonZkEvmCardona } from 'wagmi/chains';
 
+// Access environment variables
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '';
+const alchemyId = process.env.NEXT_PUBLIC_ALCHEMY_ID ?? '';
+
 const config = createConfig(
   getDefaultConfig({
     // Your dApps chains
@@ -13,13 +17,13 @@ const config = createConfig(
     transports: {
       // RPC URL for each chain
       [polygonZkEvmCardona.id]: http(
-`https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_ID}`
+`https://eth-mainnet.g.alchemy.com/v2/${alchemyId}`
       ),
     },
 
     // Required API Keys
     walletConnectProjectId:
-      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '',
+    walletConnectProjectId ?? '',
 
     // Required App Info
     appName: 'React to Web3 Bootcamp',

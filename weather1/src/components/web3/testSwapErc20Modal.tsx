@@ -11,14 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '../ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../ui/select';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
@@ -26,7 +26,7 @@ import {
   POLYGON_TOKENS,
   POLYGON_TOKENS_BY_SYMBOL,
   Token,
-} from '@/lib/constants';
+} from '../../lib/constants';
 
 import { PriceResponse, QuoteResponse } from '../../../types';
 import {
