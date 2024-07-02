@@ -1,71 +1,48 @@
-'use client'; // Ensures this file is treated as a client-side component in Next.js
+'use client'; 
+// Ensures this file is treated as a client-side component in Next.js
 
 import { useAccount, useBalance, useEnsAvatar, useEnsName } from 'wagmi';
-import { useEffect, useState } from 'react'; // Import hooks from React
-import Image from 'next/image'; // Import Next.js Image component for optimized images
-import { formatEther } from 'viem/utils'; // Import formatEther from viem
+import { useEffect, useState } from 'react';
+import { mainnet } from 'viem/chains';
+import Image from 'next/image';
 
 export function Account() {
-  const [isMounted, setIsMounted] = useState(false); // State to manage if the component is mounted
-  const [delayedAddress, setDelayedAddress] = useState(''); // State to store address with delay
-  const [delayedChainId, setDelayedChainId] = useState(null); // State to store chain ID with delay
+  const alchemyId = process.env.NEXT_PUBLIC_ALCHEMY_ID ?? '';
+  const [isMounted, setIsMounted] = useState(false);
+  // State to check if component is mounted
 
-  // Get user's account information
   const { address, chain, chainId, isConnected } = useAccount();
+  // Destructure account details from useAccount hook
 
-  // Effect to set the component as mounted after it renders for the first time
+  const { data: balanceData, isError, isLoading } = useBalance({ address });
+  // Fetch balance using useBalance hook
+
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Add delay before setting the address and chain ID
-  useEffect(() => {
-    if (address && chainId) {
-      console.log('Starting timer delay for address and chainId');
-      const timer = setTimeout(() => {
-        setDelayedAddress(address);
-        setDelayedChainId(chainId);
-        console.log('Timer delay complete: Address and Chain ID set', { address, chainId });
-      }, 500); // 500ms delay
-
-      return () => {
-        clearTimeout(timer); // Cleanup timer on unmount
-        console.log('Timer cleared');
-      };
+    if (!isMounted) {
+      setIsMounted(true);
     }
-  }, [address, chainId]);
+    console.log("Component mounted");
+  }, [isMounted]);
+  // Effect to set isMounted to true once the component mounts
 
-  // Get user's balance using delayed address and chain ID
-  const { data: balanceData, isLoading: isBalanceLoading, error: balanceError } = useBalance({
-    address: delayedAddress,
-    chainId: delayedChainId,
-  });
-
-  // Get ENS name associated with the user's address
-  const { data: ensName, isLoading: isEnsNameLoading, error: ensNameError } = useEnsName({
-    address: delayedAddress,
-    chainId: delayedChainId,
-  });
-
-  // Get ENS avatar associated with the user's ENS name
-  const { data: ensAvatar, isLoading: isEnsAvatarLoading, error: ensAvatarError } = useEnsAvatar({
-    name: ensName!,
-    chainId: delayedChainId,
-  });
-
-  // Enhanced debugging logs
   useEffect(() => {
-    console.log('Address:', address);
-    console.log('Delayed Address:', delayedAddress);
-    console.log('Chain:', chain);
-    console.log('Chain ID:', chainId);
-    console.log('Delayed Chain ID:', delayedChainId);
-    console.log('Balance Data:', balanceData);
-    console.log('Is Balance Loading:', isBalanceLoading);
-    console.log('Balance Error:', balanceError);
-  }, [address, delayedAddress, chain, chainId, delayedChainId, balanceData, isBalanceLoading, balanceError]);
+    console.log("Balance Data:", balanceData);
+    console.log("Is Loading:", isLoading);
+    console.log("Is Error:", isError);
+  }, [balanceData, isLoading, isError]);
+  // Log balance data, loading state, and error state for debugging
 
-  // If the user is not connected, display a message
+  const { data: ensName } = useEnsName({ address, chainId: mainnet.id });
+  // Fetch ENS name using useEnsName hook
+
+  const { data: ensAvatar } = useEnsAvatar({ name: ensName!, chainId: mainnet.id });
+  // Fetch ENS avatar using useEnsAvatar hook
+
+  if (!isMounted) {
+    return null;
+  }
+  // Ensure client-side rendering consistency
+
   if (!isConnected) {
     return (
       <div>
@@ -73,50 +50,58 @@ export function Account() {
       </div>
     );
   }
+  // Return a message if the user is not connected
 
-  // Main render for the connected state
+  if (isLoading) {
+    console.log("Loading balance...");
+    return <div>Fetching balance…</div>;
+  }
+  // Return a message while balance is being fetched
+
+  if (isError) {
+    console.log("Error fetching balance");
+    return <div>Error fetching balance</div>;
+  }
+  // Return a message if there's an error fetching the balance
+
   return (
     <div className="flex flex-col items-center text-center gap-y-4">
-      {/* Display placeholder content during initial server render */}
-      {!isMounted && (
-        <div className="w-full">
-          <p>Loading...</p>
+      {ensAvatar && ensName && (
+        <div className="flex items-center gap-x-2">
+          <Image
+            alt="ENS Avatar"
+            src={ensAvatar}
+            className="h-16 w-16 rounded-full"
+            height={64}
+            width={64}
+          />
+          {ensName && <p className="text-2xl">{ensName}</p>}
         </div>
       )}
-      {/* Always render the same structure, then update with data after mounting */}
-      {isMounted && (
+      {/* Display ENS avatar and name if available and component is mounted */}
+      
+      {address && (
         <>
-          {/* Display ENS avatar and name if available */}
-          {ensAvatar && ensName && (
-            <div className="flex items-center gap-x-2">
-              <Image
-                alt="ENS Avatar"
-                src={ensAvatar}
-                className="h-16 w-16 rounded-full"
-                height={64}
-                width={64}
-              />
-              <p className="text-2xl">{ensName}</p>
-            </div>
-          )}
-          {/* Display the user's address */}
           <p className="text-lg">{address}</p>
-          <div className="flex flex-col gap-y-2">
-            {/* Display loading message or the user's balance */}
-            {isBalanceLoading ? (
-              <p>Loading balance...</p>
-            ) : (
-              <p className="text-xl">
-                Balance: {balanceData ? parseFloat(formatEther(balanceData.value)).toFixed(5) : 'N/A'} ETH {/* Format balance to 5 decimal places */}
-              </p>
-            )}
-            {/* Display the connected chain and chain ID */}
-            <p className="text-lg">
-              {chain?.name}, chainId: {chainId}
-            </p>
-          </div>
         </>
       )}
+      {/* Display the user's address if available and component is mounted */}
+
+      <div className="flex flex-col gap-y-2">
+        {balanceData && (
+          <p className="text-xl">
+            Balance: {(Number(balanceData.value) / 1e18).toFixed(4)} ETH
+          </p>
+        )}
+        {/* Display the balance formatted to 4 decimal places if balance data is available */}
+
+        {chain && chainId && (
+          <p className="text-lg">
+            {chain.name}, chainId: {chainId}
+          </p>
+        )}
+        {/* Display chain name and chain ID if available and component is mounted */}
+      </div>
     </div>
   );
 }

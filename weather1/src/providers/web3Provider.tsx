@@ -7,7 +7,7 @@ import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
 import { polygonZkEvmCardona } from 'wagmi/chains';
 
 // Access environment variables
-const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '';
+const walletId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '';
 const alchemyId = process.env.NEXT_PUBLIC_ALCHEMY_ID ?? '';
 
 const config = createConfig(
@@ -17,13 +17,13 @@ const config = createConfig(
     transports: {
       // RPC URL for each chain
       [polygonZkEvmCardona.id]: http(
-`https://eth-mainnet.g.alchemy.com/v2/${alchemyId}`
+`https://polygonzkevm-cardona.g.alchemy.com/v2/${alchemyId}`
       ),
     },
 
     // Required API Keys
     walletConnectProjectId:
-    walletConnectProjectId ?? '',
+    walletId ?? '',
 
     // Required App Info
     appName: 'React to Web3 Bootcamp',
