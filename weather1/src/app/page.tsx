@@ -15,8 +15,6 @@ export default function Home() {
           <div className="py-8 w-full flex flex-col items-center gap-y-4">
             <ConnectKitButton />
               <Account />
-                <SendEthModal /> {/* Include the SendEthModal component */}
-                <SendERC20Modal /> {/*  I have 2 SendEthModal components rendering -- where is the other one */}
           </div>
         </div>
       </div>

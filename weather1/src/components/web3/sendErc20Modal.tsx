@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useReadContract } from 'wagmi'; // Import useAccount hook
 import { formatEther } from 'viem';
 import BootcampTokenABI from '../../lib/contracts/BootcampTokenABI';
-import { address } from " /account "
 
 import {
   Dialog,
