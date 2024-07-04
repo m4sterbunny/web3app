@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
-import { parseEther } from 'viem';
+import { useReadContract } from 'wagmi'; // Import useAccount hook
+import { formatEther } from 'viem';
+import BootcampTokenABI from '../../lib/contracts/BootcampTokenABI';
+import { address } from " /account "
+
 import {
   Dialog,
   DialogContent,
@@ -10,29 +13,36 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '../../components/ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import Link from 'next/link';
-import { ExternalLinkIcon } from 'lucide-react';
 
-export default function SendEthModal() {
+// Erc20Modal should get user wallet address from accounts.tsx (I think!)
+
+type SendErc20ModalProps = {
+  userAddress: `0x${string}` | undefined;
+};
+
+export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
   const [toAddress, setToAddress] = useState('');
-  const [ethValue, setEthValue] = useState('');
+  const [tokenAmount, setTokenAmount] = useState('');
   const [isMounted, setIsMounted] = useState(false);
-  const { data: hash, isPending, sendTransaction } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash,
-    });
+  const erc20ContractAddress = process.env.NEXT_PUBLIC_ERC20_CONTRACT_ADDRESS ?? '';
+  
 
-  async function submitSendTx(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    sendTransaction({
-      to: toAddress as `0x${string}`,
-      value: parseEther(ethValue),
-    });
+  const { data: erc20Balance, isSuccess } = useReadContract({
+    abi: BootcampTokenABI,
+    address: erc20ContractAddress as `0x${string}`,
+    functionName: 'balanceOf',
+    args: [userAddress ?? '0x0'], // use userAddress directly from account.tsx
+    query: {
+      enabled: Boolean(userAddress),
+    },
+  });
+
+  function submitTransferErc20() {
+    return 'placeholder function...';
   }
 
   useEffect(() => {
@@ -43,21 +53,32 @@ export default function SendEthModal() {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button>Send</Button>
+      <DialogTrigger asChild className="w-full">
+        <Button className="w-auto">Send ERC20</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-center">Send ETH</DialogTitle>
+          <DialogTitle className="text-center">Send ERC20</DialogTitle>
           <DialogDescription>
-            The amount entered will be sent to the address once you hit the Send button
+            The amount entered will be sent to the address once you hit the Send
+            button
           </DialogDescription>
         </DialogHeader>
         {isMounted ? (
           <div className="w-full">
+            <div className="text-center flex flex-col">
+              {isSuccess ? (
+                <>
+                  <h2>{parseFloat(formatEther(erc20Balance)).toFixed(2)}</h2>
+                  <h4>BOOTCAMP</h4>
+                </>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </div>
             <form
               className="flex flex-col w-full gap-y-2"
-              onSubmit={submitSendTx}
+              onSubmit={submitTransferErc20}
             >
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="address">Address</Label>
@@ -74,27 +95,10 @@ export default function SendEthModal() {
                   name="value"
                   placeholder="0.05"
                   required
-                  onChange={(event) => setEthValue(event.target.value)}
+                  onChange={(event) => setTokenAmount(event.target.value)}
                 />
               </div>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Confirming...' : 'Send'}
-              </Button>
             </form>
-            {hash && (
-              <div className="pt-8 flex flex-col items-center">
-                <Link
-                  className="hover:text-accent flex items-center gap-x-1.5"
-href={`https://cardona-zkevm.polygonscan.com/tx/${hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View tx on explorer <ExternalLinkIcon className="h4 w-4" />
-                </Link>
-                {isConfirming && <div>Waiting for confirmation...</div>}
-                {isConfirmed && <div>Transaction confirmed.</div>}
-              </div>
-            )}
           </div>
         ) : (
           <p>Loading...</p>

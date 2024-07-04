@@ -1,9 +1,10 @@
 'use client';
 
-import PageWithNavbar from '@/components/layout/page';
-import { Account } from '@/components/web3/account';
+import PageWithNavbar from '../components/layout/page';
+import { Account } from '../components/web3/account';
 import { ConnectKitButton } from 'connectkit';
-import SendEthModal from '@/components/web3/sendEthModal'; // Import the SendEthModal component
+import SendEthModal from '../components/web3/sendEthModal'; 
+import SendERC20Modal from '../components/web3/sendErc20Modal'; 
 
 export default function Home() {
   return (
@@ -13,8 +14,9 @@ export default function Home() {
           <h1 className="mb-4 text-6xl">Weather1</h1>
           <div className="py-8 w-full flex flex-col items-center gap-y-4">
             <ConnectKitButton />
-            <Account />
-            <SendEthModal /> {/* Include the SendEthModal component */}
+              <Account />
+                <SendEthModal /> {/* Include the SendEthModal component */}
+                <SendERC20Modal /> {/*  I have 2 SendEthModal components rendering -- where is the other one */}
           </div>
         </div>
       </div>

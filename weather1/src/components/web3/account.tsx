@@ -5,8 +5,11 @@ import { useAccount, useBalance, useEnsAvatar, useEnsName } from 'wagmi';
 import { useEffect, useState } from 'react';
 import { mainnet } from 'viem/chains';
 import Image from 'next/image';
+import BootcampTokenABI from '../../lib/contracts/BootcampTokenABI';
+
 
 export function Account() {
+  
   const alchemyId = process.env.NEXT_PUBLIC_ALCHEMY_ID ?? '';
   const [isMounted, setIsMounted] = useState(false);
   // State to check if component is mounted
@@ -86,6 +89,8 @@ export function Account() {
         </>
       )}
       {/* Display the user's address if available and component is mounted */}
+
+      {/* <SendErc20Modal userAddress={address} /> Killing attempt to Pass the userAddress to child prop directly */}
 
       <div className="flex flex-col gap-y-2">
         {balanceData && (
