@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther } from 'viem';
+
+// Importing UI components from your project
 import {
   Dialog,
   DialogContent,
@@ -14,29 +16,66 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import Link from 'next/link';
 import { ExternalLinkIcon } from 'lucide-react';
+import { RefreshCw } from 'lucide-react'; // Import the refresh icon
 
-export default function SendEthModal() {
-  const [toAddress, setToAddress] = useState('');
-  const [ethValue, setEthValue] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
+// Define the SendEthModal component, accepting userAddress, userBalance, and chainId as props
+export default function SendEthModal({ userAddress, userBalance, chainId }: { userAddress: string, userBalance: string, chainId: number }) {
+  // State variables for the address to send to, the value to send, and whether the component is mounted
+  const [toAddress, setToAddress] = useState<string>('');
+  const [ethValue, setEthValue] = useState<string>('');
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Hooks to manage sending transactions and waiting for transaction receipts
   const { data: hash, isPending, sendTransaction } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-      hash});
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
+  // Function to validate Ethereum addresses
+  const isValidAddress = (address: string): boolean => /^0x[a-fA-F0-9]{40}$/.test(address);
+
+  // Function to handle the form submission
   async function submitSendTx(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    // Check if the address is valid
+    if (!isValidAddress(toAddress)) {
+      setErrorMessage('Improper address type');
+      return;
+    }
+
+    // Check if the user has sufficient funds
+    const amountToSend = parseFloat(ethValue);
+    if (parseFloat(userBalance) <= amountToSend + 0.001) {
+      setErrorMessage('Insufficient funds');
+      return;
+    }
+
+    // Clear any previous error messages
+    setErrorMessage('');
+
+    // Send the transaction
     sendTransaction({
       to: toAddress as `0x${string}`,
       value: parseEther(ethValue),
+      chainId: chainId
     });
   }
 
+  // Function to reset the form and clear error messages
+  function resetForm() {
+    setToAddress('');
+    setEthValue('');
+    setErrorMessage('');
+  }
+
+  // useEffect hook to set isMounted to true when the component mounts
   useEffect(() => {
     if (!isMounted) {
       setIsMounted(true);
     }
   }, [isMounted]);
 
+  // Return the UI components
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -61,6 +100,7 @@ export default function SendEthModal() {
                   name="address"
                   placeholder="0xA0Cf…251e"
                   required
+                  value={toAddress}
                   onChange={(event) => setToAddress(event.target.value)}
                 />
               </div>
@@ -70,18 +110,30 @@ export default function SendEthModal() {
                   name="value"
                   placeholder="0.05"
                   required
+                  value={ethValue}
                   onChange={(event) => setEthValue(event.target.value)}
                 />
               </div>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Confirming...' : 'Send'}
-              </Button>
+              <div className="flex items-center gap-x-2">
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? 'Confirming...' : 'Send'}
+                </Button>
+                <Button type="button" onClick={resetForm}>
+                  <RefreshCw className="h-4 w-4" /> {/* Add the refresh icon */}
+                </Button>
+              </div>
+              {errorMessage && (
+                <div className="text-red-500 mt-2">
+                  {errorMessage}
+                </div>
+              )}
             </form>
             {hash && (
               <div className="pt-8 flex flex-col items-center">
                 <Link
                   className="hover:text-accent flex items-center gap-x-1.5"
-href={`https://cardona-zkevm.polygonscan.com/tx/${hash}`}
+                  // todo: warn this is a hard-coded link to the explorer at least verify explorer chain matches tx chain
+                  href={`https://cardona-zkevm.polygonscan.com/tx/${hash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

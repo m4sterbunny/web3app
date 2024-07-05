@@ -20,6 +20,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { RefreshCw } from 'lucide-react'; // Import the refresh icon
 
 // Define the props expected by the component
 type SendErc20ModalProps = {
@@ -31,6 +32,7 @@ export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
   const [toAddress, setToAddress] = useState('');
   const [tokenAmount, setTokenAmount] = useState('');
   const [isMounted, setIsMounted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const erc20ContractAddress = process.env.NEXT_PUBLIC_ERC20_CONTRACT_ADDRESS ?? '';
   const [isPendingClaim, setIsPendingClaim] = useState(false); // Corrected useState for isPendingClaim
   const [isPendingSend, setIsPendingSend] = useState(false); // Added useState for isPendingSend
@@ -53,6 +55,9 @@ export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
       enabled: Boolean(userAddress), 
     },
   });
+
+  // Function to validate Ethereum addresses
+  const isValidAddress = (address: string): boolean => /^0x[a-fA-F0-9]{40}$/.test(address);
 
   // Async function to handle token claiming
   async function handleClaimTokens(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
@@ -85,9 +90,27 @@ export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
   async function submitTransferErc20(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!userAddress) {
-      toast.warning('You must connect your wallet...');
+      setErrorMessage('You must connect your wallet...');
       return;
     }
+
+    // Check if the address is valid
+    if (!isValidAddress(toAddress)) {
+      setErrorMessage('Improper address type');
+      return;
+    }
+
+    // Check if the user has sufficient funds
+    const amountToSend = parseFloat(tokenAmount);
+    const tokenBalance = parseFloat(formatEther(erc20Balance));
+    if (tokenBalance <= amountToSend + 0.001) {
+      setErrorMessage('Insufficient funds');
+      return;
+    }
+
+    // Clear any previous error messages
+    setErrorMessage('');
+
     setIsPendingSend(true);
     try {
       await writeContractAsync({
@@ -101,6 +124,13 @@ export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
     } finally {
       setIsPendingSend(false);
     }
+  }
+
+  // Function to reset the form and clear error messages
+  function resetForm() {
+    setToAddress('');
+    setTokenAmount('');
+    setErrorMessage('');
   }
 
   // UseEffect to set isMounted state to true when the component mounts
@@ -156,6 +186,7 @@ export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
                   name="address"
                   placeholder="0xA0Cf…251e"
                   required
+                  value={toAddress}
                   onChange={(event) => setToAddress(event.target.value)}
                 />
               </div>
@@ -165,14 +196,29 @@ export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
                   name="value"
                   placeholder="0.05"
                   required
+                  value={tokenAmount}
                   onChange={(event) => setTokenAmount(event.target.value)}
                 />
               </div>
-              <Button type="submit">Send</Button>
+              <div className="flex items-center gap-x-2">
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? 'Confirming...' : 'Send'}
+                </Button>
+                <Button type="button" onClick={resetForm}>
+                  <RefreshCw className="h-4 w-4" /> 
+                  {/* Add the refresh icon */}
+                </Button>
+              </div>
+              {errorMessage && (
+                <div className="text-red-500 mt-2">
+                  {errorMessage}
+                </div>
+              )}
             </form>
           </div>
         ) : (
-          <p>Loading...</p> // Show loading text while component is mounting
+          <p>Loading...</p> 
+          // Show loading text while component is mounting
         )}
       </DialogContent>
     </Dialog>
