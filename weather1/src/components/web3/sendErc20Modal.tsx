@@ -1,8 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
-import { parseEther } from 'viem';
+import { 
+  useReadContract, 
+  useWriteContract,
+  useWaitForTransactionReceipt 
+} from 'wagmi';
+import { formatEther, parseEther } from 'viem'; // Added parseEther to import
+import BootcampTokenABI from '../../lib/contracts/BootcampTokenABI';
+
 import {
   Dialog,
   DialogContent,
@@ -10,31 +16,94 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '../../components/ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import Link from 'next/link';
-import { ExternalLinkIcon } from 'lucide-react';
 
-export default function SendEthModal() {
+// Define the props expected by the component
+type SendErc20ModalProps = {
+  userAddress: `0x${string}` | undefined;
+};
+
+export default function SendErc20Modal({ userAddress }: SendErc20ModalProps) {
+  // State variables to manage user input, component mounting, and claim status
   const [toAddress, setToAddress] = useState('');
-  const [ethValue, setEthValue] = useState('');
+  const [tokenAmount, setTokenAmount] = useState('');
   const [isMounted, setIsMounted] = useState(false);
-  const { data: hash, isPending, sendTransaction } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash,
-    });
+  const erc20ContractAddress = process.env.NEXT_PUBLIC_ERC20_CONTRACT_ADDRESS ?? '';
+  const [isPendingClaim, setIsPendingClaim] = useState(false); // Corrected useState for isPendingClaim
+  const [isPendingSend, setIsPendingSend] = useState(false); // Added useState for isPendingSend
+  
+  // Hook to manage contract write operations
+  const { data: hash, isPending, writeContractAsync } = useWriteContract();
+  
+  // Hook to wait for the transaction receipt
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
-  async function submitSendTx(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    sendTransaction({
-      to: toAddress as `0x${string}`,
-      value: parseEther(ethValue),
-    });
+  // Hook to read the ERC20 balance of the user
+  const { data: erc20Balance, isSuccess } = useReadContract({
+    abi: BootcampTokenABI,
+    address: erc20ContractAddress as `0x${string}`,
+    functionName: 'balanceOf',
+    // Use userAddress directly from props
+    args: [userAddress ?? '0x0'], 
+    query: {
+      // Only query if userAddress is defined
+      enabled: Boolean(userAddress), 
+    },
+  });
+
+  // Async function to handle token claiming
+  async function handleClaimTokens(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+    // Prevent the default form submission behavior
+    e.preventDefault(); 
+    if (!userAddress) {
+      // Display a warning if userAddress is not available
+      console.warn('You must connect your wallet...'); 
+      return;
+    }
+    // Set the pending claim state to true
+    setIsPendingClaim(true); 
+    try {
+      const hash = await writeContractAsync({
+        abi: BootcampTokenABI,
+        address: erc20ContractAddress as `0x${string}`,
+        functionName: 'claim',
+        args: [userAddress],
+      });
+    } catch (error) {
+      // Log any errors that occur during the contract write operation
+      console.error(error); 
+    } finally {
+      // Reset the pending claim state
+      setIsPendingClaim(false); 
+    }
   }
 
+  // Async function to handle token transfer
+  async function submitTransferErc20(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!userAddress) {
+      toast.warning('You must connect your wallet...');
+      return;
+    }
+    setIsPendingSend(true);
+    try {
+      await writeContractAsync({
+        abi: BootcampTokenABI,
+        address: erc20ContractAddress as `0x${string}`,
+        functionName: 'transfer',
+        args: [toAddress as `0x${string}`, parseEther(tokenAmount)],
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsPendingSend(false);
+    }
+  }
+
+  // UseEffect to set isMounted state to true when the component mounts
   useEffect(() => {
     if (!isMounted) {
       setIsMounted(true);
@@ -43,21 +112,43 @@ export default function SendEthModal() {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button>Send</Button>
+      <DialogTrigger asChild className="w-full">
+        <Button className="w-auto">Send ERC20</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-center">Send ETH</DialogTitle>
+          <DialogTitle className="text-center">Send ERC20</DialogTitle>
           <DialogDescription>
-            The amount entered will be sent to the address once you hit the Send button
+            The amount entered will be sent to the address once you hit the Send
+            button
           </DialogDescription>
         </DialogHeader>
-        {isMounted ? (
+        {isMounted ? ( // Render content only if the component is mounted
           <div className="w-full">
+            <div className="text-center flex flex-col">
+              {isSuccess ? ( // Check if the balance query was successful
+                <>
+                  <h2>{parseFloat(formatEther(erc20Balance)).toFixed(2)}</h2>
+                  <h4>BOOTCAMP</h4>
+                  {parseFloat(formatEther(erc20Balance)) === 0 && ( // Display claim button if balance is zero
+                    <div className="w-full py-2">
+                      <Button
+                        onClick={handleClaimTokens}
+                        variant="secondary"
+                        disabled={isPending} // Disable button if a transaction is pending
+                      >
+                        {isPendingClaim ? 'Claiming...' : 'Claim'} // Show "Claiming..." while the claim is in progress
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p>Loading...</p> // Show loading text while balance is being fetched
+              )}
+            </div>
             <form
               className="flex flex-col w-full gap-y-2"
-              onSubmit={submitSendTx}
+              onSubmit={submitTransferErc20}
             >
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="address">Address</Label>
@@ -74,30 +165,14 @@ export default function SendEthModal() {
                   name="value"
                   placeholder="0.05"
                   required
-                  onChange={(event) => setEthValue(event.target.value)}
+                  onChange={(event) => setTokenAmount(event.target.value)}
                 />
               </div>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Confirming...' : 'Send'}
-              </Button>
+              <Button type="submit">Send</Button>
             </form>
-            {hash && (
-              <div className="pt-8 flex flex-col items-center">
-                <Link
-                  className="hover:text-accent flex items-center gap-x-1.5"
-href={`https://cardona-zkevm.polygonscan.com/tx/${hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View tx on explorer <ExternalLinkIcon className="h4 w-4" />
-                </Link>
-                {isConfirming && <div>Waiting for confirmation...</div>}
-                {isConfirmed && <div>Transaction confirmed.</div>}
-              </div>
-            )}
           </div>
         ) : (
-          <p>Loading...</p>
+          <p>Loading...</p> // Show loading text while component is mounting
         )}
       </DialogContent>
     </Dialog>

@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useState } from 'react';
-import { useAccount, useBalance, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
-import { parseEther, isAddress } from 'viem'; // Import isAddress from viem
+import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther } from 'viem';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../ui/dialog';
+} from '../../components/ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -21,52 +19,28 @@ export default function SendEthModal() {
   const [toAddress, setToAddress] = useState('');
   const [ethValue, setEthValue] = useState('');
   const [isMounted, setIsMounted] = useState(false);
-  const [insufficientFunds, setInsufficientFunds] = useState(false); // State to handle insufficient funds
-  const [invalidAddress, setInvalidAddress] = useState(false); // State to handle invalid address
-
-  const { address } = useAccount(); // Get user's account information
-  const { data: balanceData } = useBalance({ address }); // Get user's balance
   const { data: hash, isPending, sendTransaction } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash,
-    });
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+      hash});
 
   async function submitSendTx(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setInsufficientFunds(false); // Reset insufficient funds state
-    setInvalidAddress(false); // Reset invalid address state
-
-    // Validate the address
-    if (!isAddress(toAddress)) {
-      setInvalidAddress(true); // Set invalid address state
-      return;
-    }
-
-    const balance = parseFloat(balanceData?.formatted || '0');
-    const valueToSend = parseFloat(ethValue);
-
-    if (valueToSend >= balance) {
-      setInsufficientFunds(true); // Set insufficient funds state
-      return;
-    }
-
     sendTransaction({
       to: toAddress as `0x${string}`,
       value: parseEther(ethValue),
     });
   }
 
+  useEffect(() => {
+    if (!isMounted) {
+      setIsMounted(true);
+    }
+  }, [isMounted]);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="w-full flex justify-center"> {/* Center the button */}
-          <Button className="w-auto">Send ETH</Button> {/* Use w-auto to let the button size adjust to its content */}
-        </div>
+        <Button>Send ETH</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -94,26 +68,20 @@ export default function SendEthModal() {
                 <Label htmlFor="value">Amount</Label>
                 <Input
                   name="value"
-                  placeholder="0.0005"
+                  placeholder="0.05"
                   required
                   onChange={(event) => setEthValue(event.target.value)}
                 />
               </div>
-              <Button type="submit" disabled={isPending} className="w-auto self-center">
+              <Button type="submit" disabled={isPending}>
                 {isPending ? 'Confirming...' : 'Send'}
               </Button>
-              {insufficientFunds && (
-                <p className="text-red-500">Insufficient funds</p> // Show insufficient funds message
-              )}
-              {invalidAddress && (
-                <p className="text-red-500">Invalid address</p> // Show invalid address message
-              )}
             </form>
             {hash && (
               <div className="pt-8 flex flex-col items-center">
                 <Link
                   className="hover:text-accent flex items-center gap-x-1.5"
-                  href={`https://cardona-zkevm.polygonscan.com/tx/${hash}`}
+href={`https://cardona-zkevm.polygonscan.com/tx/${hash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
