@@ -20,10 +20,8 @@ export default function SendEthModal() {
   const [ethValue, setEthValue] = useState('');
   const [isMounted, setIsMounted] = useState(false);
   const { data: hash, isPending, sendTransaction } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash,
-    });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+      hash});
 
   async function submitSendTx(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

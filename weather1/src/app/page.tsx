@@ -3,8 +3,6 @@
 import PageWithNavbar from '../components/layout/page';
 import { Account } from '../components/web3/account';
 import { ConnectKitButton } from 'connectkit';
-import SendEthModal from '../components/web3/sendEthModal'; 
-import SendERC20Modal from '../components/web3/sendErc20Modal'; 
 
 export default function Home() {
   return (
