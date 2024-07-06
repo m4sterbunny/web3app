@@ -30,8 +30,8 @@ export default function Navbar() {
         <div>
           <Link className="flex w-20 items-center" href="/">
             <Image
-              src="/images/logos/dabl-club-logo-black.png"
-              alt="Dabl Club logo"
+              src="/assets/pepe.png"
+              alt="Pepe"
               width={512}
               height={512}
               className="h-20 w-20 transition duration-300 ease-in-out hover:scale-90"

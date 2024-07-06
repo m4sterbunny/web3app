@@ -81,7 +81,7 @@ export default function Footer({
           <div className="md:min-w-1/3 flex items-center justify-center gap-x-3 md:order-1">
             <div className="flex items-center gap-x-1">
               <Image
-                src="/images/logos/dabl-club-logo-black.png"
+                src="/assets/logo.png"
                 alt="Dabl Club logo"
                 width={512}
                 height={512}
