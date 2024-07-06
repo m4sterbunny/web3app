@@ -80,10 +80,10 @@ export function Account() {
       </div>
       <div className="flex justify-center gap-x-8">
         <div className="w-2/5">
-          <SendEthModal userAddress={userAddress} userBalance={accountBalance?.formatted} chainId={chainId} />
+          <SendEthModal userAddress={userAddress} userBalance={accountBalance?.toString()} chainId={chainId} />
         </div>
         <div className="w-2/5">
-          <SendErc20Modal userAddress={userAddress} userBalance={accountBalance?.formatted} />
+          <SendErc20Modal userAddress={userAddress} userBalance={accountBalance?.toString()} />
         </div>
         {/* Uncomment the following block to render the SwapErc20Modal component */}
         {/* <div className="w-2/5">

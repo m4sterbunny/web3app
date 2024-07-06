@@ -1,34 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  useReadContract, 
-  useWriteContract,
-  useWaitForTransactionReceipt 
-} from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import BootcampTokenABI from '../../lib/contracts/BootcampTokenABI';
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { RefreshCw } from 'lucide-react'; // Import the refresh icon
+import Link from 'next/link';
+import { ExternalLinkIcon, RefreshCw } from 'lucide-react'; // Import the refresh icon
 
 // Define the props expected by the component
 type SendErc20ModalProps = {
   userAddress: `0x${string}` | undefined;
   userBalance: string | undefined;
+  chainId: number; // Include chainId as a prop
 };
 
-export default function SendErc20Modal({ userAddress, userBalance }: SendErc20ModalProps) {
+export default function SendErc20Modal({ userAddress, userBalance, chainId }: SendErc20ModalProps) {
   // State variables to manage user input, component mounting, and claim status
   const [toAddress, setToAddress] = useState('');
   const [tokenAmount, setTokenAmount] = useState('');
@@ -49,9 +39,9 @@ export default function SendErc20Modal({ userAddress, userBalance }: SendErc20Mo
     abi: BootcampTokenABI,
     address: erc20ContractAddress as `0x${string}`,
     functionName: 'balanceOf',
-    args: [userAddress ?? '0x0'], 
+    args: [userAddress ?? '0x0'],
     query: {
-      enabled: Boolean(userAddress), 
+      enabled: Boolean(userAddress),
     },
   });
 
@@ -60,23 +50,23 @@ export default function SendErc20Modal({ userAddress, userBalance }: SendErc20Mo
 
   // Async function to handle token claiming
   async function handleClaimTokens(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
-    e.preventDefault(); 
+    e.preventDefault();
     if (!userAddress) {
-      console.warn('You must connect your wallet...'); 
+      console.warn('You must connect your wallet...');
       return;
     }
-    setIsPendingClaim(true); 
+    setIsPendingClaim(true);
     try {
-      const hash = await writeContractAsync({
+      await writeContractAsync({
         abi: BootcampTokenABI,
         address: erc20ContractAddress as `0x${string}`,
         functionName: 'claim',
         args: [userAddress],
       });
     } catch (error) {
-      console.error(error); 
+      console.error(error);
     } finally {
-      setIsPendingClaim(false); 
+      setIsPendingClaim(false);
     }
   }
 
@@ -134,6 +124,22 @@ export default function SendErc20Modal({ userAddress, userBalance }: SendErc20Mo
     }
   }, [isMounted]);
 
+  // Function to generate the transaction explorer link based on the chain ID
+  const getExplorerLink = (hash: string) => {
+    switch (chainId) {
+      case 1: // Ethereum Mainnet
+        return `https://etherscan.io/tx/${hash}`;
+      case 137: // Polygon Mainnet
+        return `https://polygonscan.com/tx/${hash}`;
+      case 80001: // Mumbai Testnet
+        return `https://mumbai.polygonscan.com/tx/${hash}`;
+      case 2442: // Cardano zkEVM
+        return `https://cardona-zkevm.polygonscan.com/tx/${hash}`;
+      default:
+        return `https://cardona-zkevm.polygonscan.com/tx/${hash}`; // Default to Cardano zkEVM
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild className="w-full">
@@ -143,8 +149,7 @@ export default function SendErc20Modal({ userAddress, userBalance }: SendErc20Mo
         <DialogHeader>
           <DialogTitle className="text-center">Send ERC20</DialogTitle>
           <DialogDescription>
-            The amount entered will be sent to the address once you hit the Send
-            button
+            The amount entered will be sent to the address once you hit the Send button
           </DialogDescription>
         </DialogHeader>
         {isMounted ? (
@@ -170,10 +175,7 @@ export default function SendErc20Modal({ userAddress, userBalance }: SendErc20Mo
                 <p>Loading...</p>
               )}
             </div>
-            <form
-              className="flex flex-col w-full gap-y-2"
-              onSubmit={submitTransferErc20}
-            >
+            <form className="flex flex-col w-full gap-y-2" onSubmit={submitTransferErc20}>
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="address">Address</Label>
                 <Input
@@ -212,7 +214,7 @@ export default function SendErc20Modal({ userAddress, userBalance }: SendErc20Mo
               <div className="pt-8 flex flex-col items-center">
                 <Link
                   className="hover:text-accent flex items-center gap-x-1.5"
-                  href={`https://cardona-zkevm.polygonscan.com/tx/${hash}`}
+                  href={getExplorerLink(hash)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
