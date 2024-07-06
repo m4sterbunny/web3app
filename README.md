@@ -3,6 +3,12 @@ dabl play
 
 ## Use this app
 
+### Prerequisites
+
+NodeJS and packages (todo: complete this list)
+> - npm install axios cheerio
+> - wagmi, viem, what else?
+
 ### Step 1 Clone the repo
 
 Main branch of: git@github.com:m4sterbunny/web3app.git

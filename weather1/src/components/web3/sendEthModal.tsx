@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther } from 'viem';
 import {
   Dialog,
@@ -14,18 +13,16 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import Link from 'next/link';
 import { ExternalLinkIcon, RefreshCw } from 'lucide-react';
+import { useTransactionHelper } from './web3helpers/transactionHelper'; // Import the helper function
 
-// Define the SendEthModal component, accepting userAddress, userBalance, and chainId as props
 export default function SendEthModal({ userAddress, userBalance, chainId }: { userAddress: string, userBalance: string, chainId: number }) {
-  // State variables for the address to send to, the value to send, and whether the component is mounted
   const [toAddress, setToAddress] = useState<string>('');
   const [ethValue, setEthValue] = useState<string>('');
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Hooks to manage sending transactions and waiting for transaction receipts
-  const { data: hash, isPending, sendTransaction } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  // Use the helper function for transaction logic
+  const { hash, isPending, isConfirming, isTransactionConfirmed, sendTransaction, getExplorerLink } = useTransactionHelper({ chainId });
 
   // Function to validate Ethereum addresses
   const isValidAddress = (address: string): boolean => /^0x[a-fA-F0-9]{40}$/.test(address);
@@ -54,7 +51,7 @@ export default function SendEthModal({ userAddress, userBalance, chainId }: { us
     sendTransaction({
       to: toAddress as `0x${string}`,
       value: parseEther(ethValue),
-      chainId: chainId
+      chainId: chainId,
     });
   }
 
@@ -71,20 +68,6 @@ export default function SendEthModal({ userAddress, userBalance, chainId }: { us
       setIsMounted(true);
     }
   }, [isMounted]);
-
-  // Function to generate the transaction explorer link based on the chain ID
-  const getExplorerLink = (hash: string) => {
-    switch (chainId) {
-      case 1: // Ethereum Mainnet
-        return `https://etherscan.io/tx/${hash}`;
-      case 137: // Polygon Mainnet
-        return `https://polygonscan.com/tx/${hash}`;
-      case 80001: // Mumbai Testnet
-        return `https://mumbai.polygonscan.com/tx/${hash}`;
-      default:
-        return `https://etherscan.io/tx/${hash}`;
-    }
-  };
 
   // Return the UI components
   return (
@@ -142,15 +125,15 @@ export default function SendEthModal({ userAddress, userBalance, chainId }: { us
             {hash && (
               <div className="pt-8 flex flex-col items-center">
                 <Link
-                  className="hover:text-accent flex items-center gap-x-1.5"
+                  className={`flex items-center gap-x-1.5 ${isTransactionConfirmed ? 'text-blue-500' : 'text-gray-500'}`}
                   href={getExplorerLink(hash)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  View tx on explorer <ExternalLinkIcon className="h4 w-4" />
+                  View tx on explorer <ExternalLinkIcon className="h-4 w-4" />
                 </Link>
                 {isConfirming && <div>Waiting for confirmation...</div>}
-                {isConfirmed && <div>Transaction confirmed.</div>}
+                {isTransactionConfirmed && <div>Transaction confirmed.</div>}
               </div>
             )}
           </div>
