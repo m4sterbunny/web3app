@@ -7,25 +7,22 @@ import { formatEther } from 'viem';
 import Image from 'next/image';
 import SendEthModal from './sendEthModal';
 import SendErc20Modal from './sendErc20Modal';
-import { fetchRandomNftImage } from './web3helpers/openseaHelper'; // Import the helper function
+// import { fetchLatestListings, getRandomListing } from './web3helpers/openseaHelper'; // Import the helper functions
 
 export function Account() {
   const [isMounted, setIsMounted] = useState(false);
-  const [nftImageUrl, setNftImageUrl] = useState<string | null>(null);
+  const [nftImageUrl, setNftImageUrl] = useState<string>('');
   const { address: userAddress, chain, chainId, isConnected } = useAccount();
   const { data: accountBalance } = useBalance({ address: userAddress });
   const { data: ensName } = useEnsName({ address: userAddress, chainId: mainnet.id });
   const { data: ensAvatar } = useEnsAvatar({ name: ensName!, chainId: mainnet.id });
 
-  // Fetch the NFT image URL using the helper function
-  useEffect(() => {
-    fetchRandomNftImage().then((imageUrl) => {
-      setNftImageUrl(imageUrl);
-    }).catch((error) => {
-      console.error(error);
-      setNftImageUrl(null);
-    });
-  }, []);
+  // useEffect(() => {
+  //   const randomListing = getRandomListing();
+  //   if (randomListing && randomListing.assets.length > 0) {
+  //     setNftImageUrl(randomListing.assets[0].image_url);
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (!isMounted) {
@@ -42,13 +39,25 @@ export function Account() {
   }
 
   const formattedBalance = accountBalance ? formatEther(accountBalance.value) : '0';
+  const fallbackImage = '/assets/pepe.png'; // Provide a valid fallback image URL
+
+  // const handleUpdateListings = async () => {
+  //   await fetchLatestListings();
+  // };
+
+  // const handleRandomListing = () => {
+  //   const randomListing = getRandomListing();
+  //   if (randomListing && randomListing.assets.length > 0) {
+  //     setNftImageUrl(randomListing.assets[0].image_url);
+  //   }
+  // };
 
   return (
     <div className="flex flex-col items-center text-center gap-y-4">
       <div className="flex items-center gap-x-2">
         <Image
           alt="Avatar"
-          src={ensAvatar || nftImageUrl || '/assets/pepe.png'} // ENS avatar, NFT image, or fallback
+          src={ensAvatar || fallbackImage} // ENS avatar or fallback
           className="h-16 w-16 rounded-full"
           height={64}
           width={64}
@@ -76,15 +85,24 @@ export function Account() {
           <SendErc20Modal userAddress={userAddress} userBalance={formattedBalance} chainId={chainId} />
         </div>
       </div>
-      {nftImageUrl ? (
-        <div className="mt-8">
-          <img src={nftImageUrl} alt="NFT Image" className="h-16 w-16 rounded-full" />
-        </div>
-      ) : (
-        <div className="mt-8">
-          <p>Image not found</p>
-        </div>
-      )}
+      {/* <div className="mt-8 w-full h-96 overflow-hidden relative">
+        {nftImageUrl ? (
+          <iframe
+            src={nftImageUrl}
+            className="w-full h-full border-none"
+            title="NFT Page"
+            onError={() => setNftImageUrl('')}
+          />
+        ) : (
+          <p>iframe failed</p>
+        )}
+      </div> */}
+      {/* <button onClick={handleUpdateListings} className="mt-4 p-2 bg-blue-500 text-white rounded">
+        Update Listings
+      </button>
+      <button onClick={handleRandomListing} className="mt-4 p-2 bg-green-500 text-white rounded">
+        Show Random Listing
+      </button> */}
     </div>
   );
 }

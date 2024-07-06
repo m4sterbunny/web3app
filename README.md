@@ -6,7 +6,8 @@ dabl play
 ### Prerequisites
 
 NodeJS and packages (todo: complete this list)
-> - npm install axios cheerio
+> - `npm install axios cheerio`
+<!-- > - `npm install fs` not used this is for server side and needed everything client side -->
 > - wagmi, viem, what else?
 
 ### Step 1 Clone the repo
