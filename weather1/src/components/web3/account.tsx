@@ -7,50 +7,42 @@ import { formatEther } from 'viem';
 import Image from 'next/image';
 import SendEthModal from './sendEthModal';
 import SendErc20Modal from './sendErc20Modal';
-// import { fetchLatestListings, getRandomListing } from './web3helpers/openseaHelper'; // Import the helper functions
 
 export function Account() {
+  // State to track if the component is mounted
   const [isMounted, setIsMounted] = useState(false);
+  
+  // State to store the NFT image URL
   const [nftImageUrl, setNftImageUrl] = useState<string>('');
+  
+  // Wagmi hooks to get account-related data
   const { address: userAddress, chain, chainId, isConnected } = useAccount();
   const { data: accountBalance } = useBalance({ address: userAddress });
   const { data: ensName } = useEnsName({ address: userAddress, chainId: mainnet.id });
   const { data: ensAvatar } = useEnsAvatar({ name: ensName!, chainId: mainnet.id });
 
-  // useEffect(() => {
-  //   const randomListing = getRandomListing();
-  //   if (randomListing && randomListing.assets.length > 0) {
-  //     setNftImageUrl(randomListing.assets[0].image_url);
-  //   }
-  // }, []);
-
+  // useEffect to handle component mount logic
   useEffect(() => {
     if (!isMounted) {
       setIsMounted(true);
     }
   }, [isMounted]);
 
+  // If the component is not yet mounted, show a loading message
   if (!isMounted) {
     return <div><p className="text-lg">Loading...</p></div>;
   }
 
+  // If the user is not connected, show a "Not connected" message
   if (!isConnected) {
     return <div><p className="text-lg">Not connected</p></div>;
   }
 
+  // Format the account balance to display in ETH
   const formattedBalance = accountBalance ? formatEther(accountBalance.value) : '0';
-  const fallbackImage = '/assets/pepe.png'; // Provide a valid fallback image URL
-
-  // const handleUpdateListings = async () => {
-  //   await fetchLatestListings();
-  // };
-
-  // const handleRandomListing = () => {
-  //   const randomListing = getRandomListing();
-  //   if (randomListing && randomListing.assets.length > 0) {
-  //     setNftImageUrl(randomListing.assets[0].image_url);
-  //   }
-  // };
+  
+  // Fallback image if ENS avatar is not available
+  const fallbackImage = '/assets/pepe.png';
 
   return (
     <div className="flex flex-col items-center text-center gap-y-4">
@@ -85,24 +77,6 @@ export function Account() {
           <SendErc20Modal userAddress={userAddress} userBalance={formattedBalance} chainId={chainId} />
         </div>
       </div>
-      {/* <div className="mt-8 w-full h-96 overflow-hidden relative">
-        {nftImageUrl ? (
-          <iframe
-            src={nftImageUrl}
-            className="w-full h-full border-none"
-            title="NFT Page"
-            onError={() => setNftImageUrl('')}
-          />
-        ) : (
-          <p>iframe failed</p>
-        )}
-      </div> */}
-      {/* <button onClick={handleUpdateListings} className="mt-4 p-2 bg-blue-500 text-white rounded">
-        Update Listings
-      </button>
-      <button onClick={handleRandomListing} className="mt-4 p-2 bg-green-500 text-white rounded">
-        Show Random Listing
-      </button> */}
     </div>
   );
 }
