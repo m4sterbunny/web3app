@@ -1,5 +1,5 @@
 # web3app
-dabl play
+dabl play based on Polygon Dabl's boilerplate: https://github.com/m4sterbunny/downstream-dabl
 
 ## Use this app
 
